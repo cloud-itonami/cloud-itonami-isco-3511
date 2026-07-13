@@ -5,12 +5,25 @@ Open Business Blueprint for **ISCO-08 3511**: ICT Operations Technicians — an 
 rollout plan (ADR-2607121000): pure-cognitive work, the LLM-first wave,
 with **no robotics gate** — eligible for actor implementation now.
 
-**Maturity: `:blueprint`** — this repository publishes the business
-blueprint only; **no actor implementation yet**, and none is claimed.
-The implemented actor will follow the fleet-standard pattern
-(advisor-LLM sealed behind the independent `:ict-operations-governor`
-governor, human approval workflow, append-only audit ledger — same
-shape as cloud-itonami-isco-2411's accounting practice).
+**Maturity: `:implemented`** — ICTOperationsTechniciansAdvisor ⊣
+ICTOperationsTechniciansGovernor as a langgraph StateGraph
+(`intake → advise → govern → decide → commit/hold`, human-approval
+interrupt), modeled on cloud-itonami-isco-4311's bookkeeping actor.
+13 tests / 27 assertions green.
+
+The ops HARD invariants — arithmetic and set coverage, not a best
+effort:
+
+1. **SLA arithmetic** — the proposed response-time-minutes must not
+   exceed the system's registered SLA ceiling.
+2. **Certification coverage** — the responding technician's
+   certifications must be a superset of the system's registered
+   required-certifications set (no partial-coverage response).
+
+Also HARD: unregistered/foreign system, unregistered organization,
+non-`:propose` effect. Escalations (always human sign-off):
+`:approve-emergency-override` (bypassing normal change control under
+incident pressure), low confidence (< 0.6).
 
 AGPL-3.0-or-later, forkable by any qualified operator. Part of the
 [cloud-itonami](https://itonami.cloud) open business fleet
