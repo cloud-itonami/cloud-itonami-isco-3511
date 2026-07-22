@@ -17,8 +17,25 @@
              the technician's registered qualification).
     record — a committed operating record (approved incident
              response) — written ONLY via commit-record!.
-    ledger — append-only audit trail, commit or hold."
-  )
+    ledger — append-only audit trail, commit or hold.
+
+  Two backends implement the same `Store` protocol so the backend is a
+  swap, not a rewrite:
+
+    - `MemStore`     — atom of EDN. The deterministic default for
+                       dev/tests/demo (no deps).
+    - `DatomicStore` — backed by `langchain.db`, a Datomic-API-compatible
+                       EAV store (swappable to a kotoba-server pod in
+                       production). client/system/record/ledger entries
+                       carry free-form fields (including the
+                       `:required-certifications` set), so each is
+                       stored as an EDN-blob payload via
+                       `langchain-store.core` (`ls/enc`/`ls/dec*`), not a
+                       hand-rolled codec (ADR-2607141600).
+
+  Both pass the same contract (test/ictops/store_contract_test.clj)."
+  (:require [langchain.db :as d]
+            [langchain-store.core :as ls]))
 
 (defprotocol Store
   (client [s client-id])
@@ -49,3 +66,42 @@
   ([] (mem-store {}))
   ([seed] (->MemStore (atom (merge {:clients {} :systems {} :records [] :ledger []}
                                    seed)))))
+
+;; ----------------------------- DatomicStore (langchain.db) -----------------------------
+
+(def ^:private schema
+  (ls/identity-schema [:client/id :system/id :record/seq :ledger/seq]))
+
+(defn- blob-lookup
+  "Look up the EDN-blob payload for the entity uniquely identified by
+  `id-attr`/`id` and stored under `payload-attr`."
+  [conn id-attr payload-attr id]
+  (ls/dec* (d/q {:find '[?p .] :in '[$ ?id]
+                 :where [['?e id-attr '?id] ['?e payload-attr '?p]]}
+               (d/db conn) id)))
+
+(defrecord DatomicStore [conn]
+  Store
+  (client [_ client-id] (blob-lookup conn :client/id :client/payload client-id))
+  (system [_ system-id] (blob-lookup conn :system/id :system/payload system-id))
+  (records-of [_ client-id]
+    (filter #(= client-id (:client-id %)) (ls/read-stream conn :record/seq :record/payload)))
+  (ledger [_] (ls/read-stream conn :ledger/seq :ledger/payload))
+  (register-client! [s client]
+    (d/transact! conn [{:client/id (:client-id client) :client/payload (ls/enc client)}]) s)
+  (register-system! [s sys]
+    (d/transact! conn [{:system/id (:system-id sys) :system/payload (ls/enc sys)}]) s)
+  (commit-record! [s record]
+    (ls/append-blob! conn :record/seq :record/payload (count (ls/read-stream conn :record/seq :record/payload)) record) s)
+  (append-ledger! [s fact]
+    (ls/append-blob! conn :ledger/seq :ledger/payload (count (ls/read-stream conn :ledger/seq :ledger/payload)) fact) s))
+
+(defn datomic-store
+  ([] (datomic-store {}))
+  ([seed]
+   (let [s (->DatomicStore (d/create-conn schema))]
+     (doseq [[_ client] (:clients seed)] (register-client! s client))
+     (doseq [[_ sys] (:systems seed)] (register-system! s sys))
+     (doseq [record (:records seed)] (commit-record! s record))
+     (doseq [fact (:ledger seed)] (append-ledger! s fact))
+     s)))

@@ -1,4 +1,13 @@
 name: CI
+
+# deps.edn pins langchain-store via an in-monorepo :local/root path
+# (../../kotoba-lang/langchain-store), and the :dev alias overrides
+# langchain the same way. Those don't resolve on a bare single-repo
+# checkout, so this job reconstructs the workspace layout by checking
+# out the langchain / langchain-store siblings (both PUBLIC) into the
+# expected relative paths -- no token needed. Same pattern used by
+# cloud-itonami-iso3166-ago / cloud-itonami-isic-3512 / -isic-8690.
+
 on:
   push:
     branches: [main]
@@ -9,6 +18,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { path: orgs/cloud-itonami/cloud-itonami-isco-3511 }
+      - uses: actions/checkout@v4
+        with:
+          repository: kotoba-lang/langchain
+          path: orgs/kotoba-lang/langchain
+      - uses: actions/checkout@v4
+        with:
+          repository: kotoba-lang/langchain-store
+          path: orgs/kotoba-lang/langchain-store
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -17,6 +35,8 @@ jobs:
         with:
           cli: latest
       - name: Lint
+        working-directory: orgs/cloud-itonami/cloud-itonami-isco-3511
         run: clojure -M:lint
       - name: Test
-        run: clojure -M:test
+        working-directory: orgs/cloud-itonami/cloud-itonami-isco-3511
+        run: clojure -M:dev:test

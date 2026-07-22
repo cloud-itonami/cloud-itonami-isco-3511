@@ -1,8 +1,21 @@
 {:paths ["src"]
  :deps {io.github.kotoba-lang/langgraph
-        {:git/sha "5b4e5e70837b849b14b6a5800894e3be202ad5fa"}}
+        {:git/sha "5b4e5e70837b849b14b6a5800894e3be202ad5fa"}
+        ;; langchain-store: the shared langchain.db store seam (EDN-blob
+        ;; codec + identity schema + event-log helpers) that ~190
+        ;; cloud-itonami actors hand-roll (ADR-2607141600);
+        ;; ictops.store's DatomicStore uses it instead of its own
+        ;; enc/dec* two-liner. :local/root resolves inside the monorepo
+        ;; checkout — a standalone fork should override it with git
+        ;; coordinates.
+        io.github.kotoba-lang/langchain-store
+        {:local/root "../../kotoba-lang/langchain-store"}}
  :aliases
- {:test {:extra-paths ["test"]
+ {;; offline workspace dev -- pin transitive langchain to local checkout
+  :dev {:override-deps
+        {io.github.kotoba-lang/langchain
+         {:local/root "../../kotoba-lang/langchain"}}}
+  :test {:extra-paths ["test"]
          :extra-deps {io.github.cognitect-labs/test-runner
                       {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
          :main-opts ["-m" "cognitect.test-runner"]}
