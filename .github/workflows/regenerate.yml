@@ -18,7 +18,7 @@ jobs:
         run: |
           git clone --depth 1 https://github.com/kotoba-lang/langchain-store.git ../../kotoba-lang/langchain-store
       - name: regenerate through the real actor
-        run: clojure -M:render-html
+        run: kbb -M:render-html
       - name: verify (real output, not scaffolding)
         run: |
           grep -q 'ictops.render-html' docs/samples/operator-console.html
