@@ -33,7 +33,7 @@
                        `langchain-store.core` (`ls/enc`/`ls/dec*`), not a
                        hand-rolled codec (ADR-2607141600).
 
-  Both pass the same contract (test/ictops/store_contract_test.clj)."
+  Both pass the same contract (test/ictops/store_contract_test.cljk)."
   (:require [langchain.db :as d]
             [langchain-store.core :as ls]))
 
