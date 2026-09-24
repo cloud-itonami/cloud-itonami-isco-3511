@@ -1,5 +1,5 @@
 (ns ictops.actor-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [ictops.actor :as actor]
             [ictops.store :as store]))
 
