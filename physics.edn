@@ -1,0 +1,42 @@
+;; What this vertical's robot physically does, declared for
+;; kotoba.robotics.process (kotoba-lang/robotics). `kbb -M:dev:physics` runs it.
+;;
+;; README: ICT operations technicians (ISCO 3511) are a Wave-0 cognitive
+;; occupation (no robotics gate); blueprint.edn declares
+;; :itonami.blueprint/robotics true. The physical edge of ICT operations work
+;; in a machine room is hardware handling: racking a server, moving servers
+;; on a cart along the hot/cold aisle, and the chilled-water branch that cools
+;; the racks. These cases declare that edge; the actor itself stays cognitive.
+;;
+;; Every number without a cited source is marked `estimate` in its :basis.
+{:physics/schema "itonami.physical-ai.spec.v1"
+ :repo "cloud-itonami/cloud-itonami-isco-3511"
+ :cases
+ [{:id :server-into-rack
+   :kind :manipulator
+   :procedure "arm lifts a rack server from the cart shelf up into its rack slot"
+   :params {:l1-m 0.60 :l2-m 0.55 :m1-kg 8.0 :m2-kg 6.0
+            :from [0.70 0.10] :to [0.30 0.80] :duration-s 3.0 :steps 600}
+   :sweep {:param :payload-kg :values [5.0 10.0 15.0 20.0 25.0]}
+   :quantity :peak-tau1-nm
+   :limit {:max 150.0 :basis "estimate: continuous shoulder torque of a ~10 kg-class collaborative arm"}
+   :boundary {:lo 0.5 :hi 60.0}}
+  {:id :server-cart-down-aisle
+   :kind :transport
+   :procedure "robot pushes a cart of servers from the loading bay down the aisle to the target row"
+   :params {:mass-kg 60.0 :distance-m 40.0 :v-max-mps 1.0 :a-max-mps2 0.5
+            :brake-decel-mps2 0.8 :drive-force-n 150.0 :crr 0.015
+            :cog-height-m 0.60 :support-half-length-m 0.30}
+   :sweep {:param :payload-kg :values [20.0 60.0 120.0 200.0 300.0]}
+   :quantity :cycle-time-s
+   :limit {:max 50.0 :basis "estimate: one aisle leg within a change-window slot of under a minute per server move"}
+   :boundary {:lo 1.0 :hi 800.0}}
+  {:id :rack-chilled-water-branch
+   :kind :pipe-flow
+   :procedure "chilled water runs through a 40 mm branch from the header to a rear-door rack cooler"
+   :params {:diameter-m 0.04 :length-m 30.0 :roughness-m 4.5e-5
+            :density-kg-m3 998.0 :viscosity-pa-s 1.3e-3 :pump-efficiency 0.65 :elevation-m 2.0}
+   :sweep {:param :q-m3s :values [0.0005 0.001 0.002 0.003 0.004]}
+   :quantity :velocity-mps
+   :limit {:max 2.0 :basis "estimate: common HVAC practice keeps water velocity in small branch piping around or below 2 m/s against noise and erosion"}
+   :boundary {:lo 0.0001 :hi 0.01}}]}
