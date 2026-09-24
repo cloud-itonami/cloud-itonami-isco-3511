@@ -3,7 +3,7 @@
   backend swap (ADR-2607011000 injection boundary) is real: the same
   sequence of operations against either backend produces the same
   observable results."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [ictops.store :as store]))
 
 (defn- exercise [s]
