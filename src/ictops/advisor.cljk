@@ -11,7 +11,7 @@
                :response-time-minutes number
                :technician-certifications #{str} :stake kw
                :confidence n :rationale str}"
-  (:require #?(:clj [clojure.edn :as edn]
+  (:require #?(:clj [kotoba.lang.edn :as edn]
                :cljs [cljs.reader :as edn])))
 
 (defprotocol Advisor
